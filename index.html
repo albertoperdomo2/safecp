@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>safecp</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔐</text></svg>">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+    <style>
+        body:not(.dark-mode) h1,
+        body:not(.dark-mode) h2,
+        body:not(.dark-mode) h3,
+        body:not(.dark-mode) h4,
+        body:not(.dark-mode) button {
+            color: #000000;
+        }
+        body.dark-mode h1,
+        body.dark-mode h2,
+        body.dark-mode h3,
+        body.dark-mode h4,
+        body.dark-mode button {
+            color: #ffffff !important;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        body {
+            transition: background-color 0.3s, color 0.3s;
+            background-color: #f5f5dc;
+            color: #000000;
+        }
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .code-snippet {
+            border-radius: 8px;
+            padding: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body:not(.dark-mode) .code-snippet {
+            background-color: #2b2b2b;
+            color: #ffffff;
+        }
+        body.dark-mode .code-snippet {
+            background-color: #f0f0f0;
+            color: #000000;
+        }
+        #mode-toggle {
+            background: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #mode-toggle:hover {
+            background-color: rgba(128, 128, 128, 0.2);
+        }
+        #mode-toggle:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+        }
+        body.dark-mode #mode-toggle:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+        }
+        #mode-toggle:focus:not(:focus-visible) {
+            outline: none;
+            box-shadow: none;
+        }
+        /* Updated styles for the terminal */
+        #terminal {
+            width: 100%;
+            height: 160px;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 14px;
+            overflow: hidden;
+            font-family: monospace;
+            margin-bottom: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body:not(.dark-mode) #terminal {
+            background-color: #2b2b2b;
+            color: #ffffff;
+        }
+        body.dark-mode #terminal {
+            background-color: #f0f0f0;
+            color: #000000;
+        }
+        #cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            animation: blink 0.7s infinite;
+        }
+        body:not(.dark-mode) #cursor {
+            background-color: #ffffff;
+        }
+        body.dark-mode #cursor {
+            background-color: #000000;
+        }
+        @keyframes blink {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div style="padding: 20px;">
+        <div class="header">
+            <div>
+             <h1 style="margin: 0;">🔐 safecp</h1>
+            </div>
+            <button id="mode-toggle">dark</button>
+        </div>
+        <p>a simple background service to sanitize sensitive clipboard contents (like emails, tokens, IDs) on macOS and Linux</p>
+
+        <div style="margin-top: 40px; margin-bottom: 40px;">
+            <h2>installation</h2>
+            <p>clone the repo and run the install script:</p>
+            <pre class="code-snippet">git clone https://github.com/albertoperdomo2/safecp.git
+cd safecp
+./install</pre>
+        </div>
+
+        <div style="margin-top: 40px; margin-bottom: 40px;">
+            <h2>usage</h2>
+            <p>after installation, safecp runs in the background and monitors your clipboard for sensitive content:</p>
+            <pre class="code-snippet"># copied token:
+gho_1234abcd...
+
+# automatically replaced with:
+DUMMY_TOKEN_1</pre>
+            <p>default patterns live at <code>~/.safecp.patterns.json</code> and are fully customizable</p>
+        </div>
+
+        <div style="margin-top: 40px; margin-bottom: 40px;">
+            <h2>features</h2>
+            <ul>
+                <li>runs automatically as a background service</li>
+                <li>detects and replaces secrets in real time</li>
+                <li>supports custom regex patterns</li>
+                <li>macOS (LaunchAgent) and Linux (systemd) support</li>
+                <li>minimalist and easily auditable</li>
+            </ul>
+        </div>
+
+        <div id="terminal">
+            <span id="prompt"></span><span id="command"></span><span id="cursor"></span>
+            <div id="output"></div>
+        </div>
+
+        <div style="margin-top: 20px; margin-bottom: 20px;">
+            <a href="https://github.com/albertoperdomo2/safecp" role="button">view on GitHub</a>
+        </div>
+    </div>
+
+    <script>
+        const body = document.body;
+        const modeToggle = document.getElementById('mode-toggle');
+
+        modeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            modeToggle.textContent = body.classList.contains('dark-mode') ? 'light' : 'dark';
+        });
+
+        const terminal = document.getElementById('terminal');
+        const promptSpan = document.getElementById('prompt');
+        const commandSpan = document.getElementById('command');
+        const outputDiv = document.getElementById('output');
+        const cursor = document.getElementById('cursor');
+
+        const commands = [
+            { prompt: "[user@machine ~/safecp]$ ", command: "./install", output: 
+`Setting up service on macOS...
+Created ~/Library/LaunchAgents/com.user.safecp.plist
+
+To control the service, use these commands:
+  Start:   launchctl load ~/Library/LaunchAgents/com.user.safecp.plist
+  Stop:    launchctl unload ~/Library/LaunchAgents/com.user.safecp.plist
+  Status:  launchctl list | grep safecp
+
+Or use the service's built-in commands:
+  ./service start
+  ./service stop
+  ./service status
+
+Installation complete!`
+            },
+            { prompt: "[user@machine ~/safecp]$ ", command: "pbpaste", output: "API_KEY=DUMMY_API_KEY_1" }
+        ];
+
+        async function simulateTyping(text, element) {
+            for (let char of text) {
+                element.textContent += char;
+                await new Promise(resolve => setTimeout(resolve, 30));
+            }
+        }
+
+        async function simulateTerminal() {
+            for (let cmd of commands) {
+                promptSpan.textContent = '';
+                commandSpan.textContent = '';
+                outputDiv.textContent = '';
+
+                promptSpan.textContent = cmd.prompt;
+                await simulateTyping(cmd.command, commandSpan);
+                await new Promise(resolve => setTimeout(resolve, 800));
+                outputDiv.innerHTML = cmd.output.replace(/\n/g, '<br>');
+                await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+            setTimeout(simulateTerminal, 1000);
+        }
+
+        simulateTerminal();
+    </script>
+</body>
+</html>
