@@ -1,0 +1,38 @@
+{
+  "email": {
+    "pattern": "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b",
+    "replacement_template": "user{counter}@example.com"
+  },
+  "url": {
+    "pattern": "https?://(?:[-\\w.]|(?:%[\\da-fA-F]{2}))+[/\\w\\.-]*\\??[/\\w\\.-=&%]*",
+    "replacement_template": "https://example.com/path{counter}"
+  },
+  "internal_url": {
+    "pattern": "https?://(?:[\\w-]+\\.)*internal\\.(?:[\\w-]+\\.)*(?:com|org|net|dev)[/\\w\\.-]*\\??[/\\w\\.-=&%]*",
+    "replacement_template": "https://internal.example.com/path{counter}"
+  },
+  "ip_address": {
+    "pattern": "\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b",
+    "replacement_template": "192.0.2.{counter}"
+  },
+  "token": {
+    "pattern": "\\b(?:Bearer\\s+)?[A-Za-z0-9_-]{10,}(?:\\.[A-Za-z0-9_-]+){0,2}\\b",
+    "replacement_template": "DUMMY_TOKEN_{counter}"
+  },
+  "api_key": {
+    "pattern": "\\b(?:key-|sk-|pk-|api-key-|token-|auth-)[A-Za-z0-9]{10,}\\b",
+    "replacement_template": "DUMMY_API_KEY_{counter}"
+  },
+  "username": {
+    "pattern": "(?<!\\w)@[\\w._-]+\\b",
+    "replacement_template": "@user{counter}"
+  },
+  "password_param": {
+    "pattern": "(?:password|passwd|pwd)=\\S+",
+    "replacement_template": "password=DUMMY_PASSWORD"
+  },
+  "credit_card": {
+    "pattern": "\\b(?:\\d{4}[- ]){3}\\d{4}\\b|\\b\\d{16}\\b",
+    "replacement_template": "4111-1111-1111-1111"
+  }
+}

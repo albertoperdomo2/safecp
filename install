@@ -1,0 +1,123 @@
+#!/bin/bash
+set -euo pipefail
+IFS=$'\n\t'
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SERVICE_NAME="safecp"
+SERVICE_FILE="$SCRIPT_DIR/service"
+USER_HOME="$HOME"
+
+if [ ! -f "$SERVICE_FILE" ]; then
+    echo "Error: safecp.py not found in $SCRIPT_DIR"
+    exit 1
+fi
+
+chmod +x "$SERVICE_FILE"
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "Setting up service on macOS..."
+    
+    # create LaunchAgent directory if it doesn't exist
+    LAUNCH_AGENTS_DIR="$USER_HOME/Library/LaunchAgents"
+    mkdir -p "$LAUNCH_AGENTS_DIR"
+    
+    # create plist file
+    PLIST_FILE="$LAUNCH_AGENTS_DIR/com.user.$SERVICE_NAME.plist"
+    cat > "$PLIST_FILE" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.user.$SERVICE_NAME</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>$SERVICE_FILE</string>
+        <string>start</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <false/>
+    <key>StandardErrorPath</key>
+    <string>/tmp/$SERVICE_NAME.err</string>
+    <key>StandardOutPath</key>
+    <string>/tmp/$SERVICE_NAME.out</string>
+    <key>WorkingDirectory</key>
+    <string>$SCRIPT_DIR</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+</dict>
+</plist>
+EOF
+    
+    echo "Created $PLIST_FILE"
+    echo ""
+    echo "To control the service, use these commands:"
+    echo "  Start:   launchctl load $PLIST_FILE"
+    echo "  Stop:    launchctl unload $PLIST_FILE"
+    echo "  Status:  launchctl list | grep $SERVICE_NAME"
+    echo ""
+    echo "Or use the service's built-in commands:"
+    echo "  $SERVICE_FILE start"
+    echo "  $SERVICE_FILE stop"
+    echo "  $SERVICE_FILE status"
+    
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    # linux installation
+    echo "Setting up service on Linux..."
+    
+    # create systemd user directory if it doesn't exist
+    SYSTEMD_DIR="$USER_HOME/.config/systemd/user"
+    mkdir -p "$SYSTEMD_DIR"
+    
+    # create service file
+    SERVICE_UNIT="$SYSTEMD_DIR/$SERVICE_NAME.service"
+    cat > "$SERVICE_UNIT" << EOF
+[Unit]
+Description=SafeCp service
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/python3 $SERVICE_FILE start
+ExecStop=/usr/bin/python3 $SERVICE_FILE stop
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
+EOF
+    
+    systemctl --user daemon-reload
+    
+    echo "Created $SERVICE_UNIT"
+    echo ""
+    echo "To control the service, use these commands:"
+    echo "  Enable:  systemctl --user enable $SERVICE_NAME.service"
+    echo "  Start:   systemctl --user start $SERVICE_NAME.service"
+    echo "  Stop:    systemctl --user stop $SERVICE_NAME.service"
+    echo "  Status:  systemctl --user status $SERVICE_NAME.service"
+    echo ""
+    echo "Or use the service's built-in commands:"
+    echo "  $SERVICE_FILE start"
+    echo "  $SERVICE_FILE stop"
+    echo "  $SERVICE_FILE status"
+    
+else
+    echo "Unsupported operating system: $OSTYPE"
+    echo "You can still use the script directly with:"
+    echo "  $SERVICE_FILE start"
+    echo "  $SERVICE_FILE stop"
+    echo "  $SERVICE_FILE status"
+    exit 1
+fi
+
+echo ""
+echo "Installation complete!"
