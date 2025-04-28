@@ -1,6 +1,6 @@
 # safecp
 
-`🛡️ safecp` is a lightweight clipboard monitoring service for **macOS** and **Linux** that helps prevent accidental leaks of sensitive information by automatically scrubbing clipboard content using custom patterns. It is a great tool to avoid leaking sensitive information to any LLM out in the wild! 
+`🛡️ safecp` is a lightweight clipboard monitoring service for **macOS** and **Linux** that helps prevent accidental leaks of sensitive information by automatically scrubbing clipboard content using custom patterns. **It is a great tool to avoid leaking sensitive information to any LLM out in the wild!** 
 
 ---
 
