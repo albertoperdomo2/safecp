@@ -8,11 +8,32 @@ SERVICE_FILE="$SCRIPT_DIR/service"
 USER_HOME="$HOME"
 
 if [ ! -f "$SERVICE_FILE" ]; then
-    echo "Error: safecp.py not found in $SCRIPT_DIR"
+    echo "Error: service file not found in $SCRIPT_DIR"
     exit 1
 fi
 
 chmod +x "$SERVICE_FILE"
+
+function ask_installation() {
+ echo "This installation will create a LaunchAgent plist file or systemd user service unit on your system, depending on your OS."
+ echo "This is entirely optional - you can still use the service by running the service script directly."
+ read -rp "Do you want to proceed with installation? [y/N] " response
+
+ case ${response:0:1} in
+  [Yy]* ) return 0;;
+  * )
+   echo ""
+   echo "Installation cancelled. You can still use the service with:"
+   echo ""
+   echo "  $SERVICE_FILE start"
+   echo "  $SERVICE_FILE stop"
+   echo "  $SERVICE_FILE status"
+   exit 0
+   ;;
+ esac
+}
+
+ask_installation
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Setting up service on macOS..."
